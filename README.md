@@ -35,6 +35,8 @@ Orders-automation/
 └── templates/              # Frontend templates
     ├── dashboard.html      # Mission-control operations deck & client-side app logic
     └── login.html          # Secure entry interface with system boot sequence
+
+    
 ⚙️ Installation & Local Setup
 1. Clone the Repository
 Bash
