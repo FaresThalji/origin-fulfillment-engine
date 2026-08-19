@@ -35,3 +35,25 @@ Orders-automation/
 └── templates/              # Frontend templates
     ├── dashboard.html      # Mission-control operations deck & client-side app logic
     └── login.html          # Secure entry interface with system boot sequence
+⚙️ Installation & Local Setup
+1. Clone the Repository
+Bash
+git clone [https://github.com/YourUsername/origin-operations-console.git](https://github.com/YourUsername/origin-operations-console.git)
+cd origin-operations-console
+2. Install Dependencies
+Make sure you install Flask with the [async] extra so asynchronous route views execute correctly:
+
+Bash
+pip install -r requirements.txt
+(Or install manually via: pip install "Flask[async]==3.0.3" aiohttp==3.9.5 pandas==2.2.2 openpyxl==3.1.2)
+
+3. Run the Application
+Bash
+python app.py
+The server will start locally on http://127.0.0.1:5000 and automatically open the console in your default browser.
+
+🔒 Sandbox & Mock Mode
+This repository is pre-configured with secure fallback behaviors and sandbox login routes (demo / demo) so developers can evaluate the UI layout, command console, and workflow layouts instantly without needing active corporate API keys.
+
+📄 License
+This project is open-source and available under the MIT License.
