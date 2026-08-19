@@ -1,0 +1,878 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ORIGIN · Console</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
+<style>
+/* =========================================================
+   ORIGIN CONSOLE v2 — CONTROL DECK
+   ========================================================= */
+:root{
+  --ease: cubic-bezier(.16,1,.3,1);
+  --ease-snap: cubic-bezier(.65,0,.35,1);
+  --font-d:'Space Grotesk', sans-serif;
+  --font-b:'Inter', sans-serif;
+  --font-m:'JetBrains Mono', monospace;
+  --rail-w: 76px;
+  --topbar-h: 56px;
+
+  --ok:#2DD4BF; --ok-soft:rgba(45,212,191,0.13); --ok-line:rgba(45,212,191,0.35);
+  --warn:#FF8A3D; --warn-soft:rgba(255,138,61,0.13); --warn-line:rgba(255,138,61,0.35);
+  --err:#FF5C5C; --err-soft:rgba(255,92,92,0.13); --err-line:rgba(255,92,92,0.35);
+  --transit:#5B9CFF; --transit-soft:rgba(91,156,255,0.13); --transit-line:rgba(91,156,255,0.35);
+}
+:root[data-theme="dark"]{
+  --void:#080A0E; --void-2:#0E1219; --void-3:#12161E;
+  --surface-1: rgba(20,24,32,0.72); --surface-2: rgba(255,255,255,0.045);
+  --input-bg: rgba(0,0,0,0.32);
+  --ink:#ECEEF2; --dim:#A1ABB8; --dimmer:#717A8A;
+  --line: rgba(255,255,255,0.09); --line-soft: rgba(255,255,255,0.05);
+  --shadow-lg: 0 30px 60px -14px rgba(0,0,0,0.6);
+}
+:root[data-theme="light"]{
+  --void:#EEF1F6; --void-2:#E4E8EF; --void-3:#DCE1EA;
+  --surface-1: rgba(255,255,255,0.85); --surface-2: rgba(15,23,42,0.045);
+  --input-bg:#FFFFFF;
+  --ink:#12151C; --dim:#5D6577; --dimmer:#8A93A3;
+  --line: rgba(15,23,42,0.10); --line-soft: rgba(15,23,42,0.05);
+  --shadow-lg: 0 26px 52px -16px rgba(15,23,42,0.16);
+}
+
+body[data-portal="walmart"]{ --accent:#4C8DFF; --accent-2:#8FB4FF; --accent-glow:rgba(76,141,255,0.24); --radius-lg:20px; --radius-md:13px; --radius-sm:8px; --btn-w:600; --tt:none; --ls:0px; --portal-font:var(--font-b); --has-auto:1; }
+body[data-portal="turn5"]{ --accent:#FF5A4E; --accent-2:#FF8A7A; --accent-glow:rgba(255,90,78,0.24); --radius-lg:3px; --radius-md:3px; --radius-sm:2px; --btn-w:700; --tt:uppercase; --ls:0.6px; --portal-font:var(--font-d); --has-auto:0; }
+body[data-portal="partsgeek"]{ --accent:#2DD4BF; --accent-2:#6FF0DE; --accent-glow:rgba(45,212,191,0.22); --radius-lg:6px; --radius-md:4px; --radius-sm:3px; --btn-w:600; --tt:none; --ls:0px; --portal-font:var(--font-m); --has-auto:1; }
+
+.walmart-only, .partsgeek-only, .wm-col { display: none; }
+body[data-portal="walmart"] div.walmart-only { display: block; }
+body[data-portal="walmart"] button.walmart-only { display: inline-flex; }
+body[data-portal="partsgeek"] div.partsgeek-only { display: block; }
+body[data-portal="partsgeek"] button.partsgeek-only { display: inline-flex; }
+body[data-portal="walmart"] .wm-col, body[data-portal="turn5"] .wm-col { display: table-cell; }
+
+*{ margin:0; padding:0; box-sizing:border-box; }
+html{ scroll-behavior:smooth; }
+body{ background:var(--void); color:var(--ink); font-family:var(--font-b); min-height:100vh; overflow-x:hidden; transition: background-color .6s ease, color .4s ease; -webkit-font-smoothing:antialiased; }
+::selection{ background:var(--accent); color:#080A0E; }
+button{ font-family:inherit; }
+
+/* ---------- ambient field ---------- */
+#field{ position:fixed; inset:0; z-index:-1; overflow:hidden; }
+.field-grid{ position:absolute; inset:0; background-image: linear-gradient(var(--line-soft) 1px, transparent 1px), linear-gradient(90deg, var(--line-soft) 1px, transparent 1px);
+  background-size:46px 46px; mask-image: radial-gradient(circle at 78% 0%, black 0%, transparent 60%); -webkit-mask-image: radial-gradient(circle at 78% 0%, black 0%, transparent 60%); }
+.field-glow{ position:absolute; width:50vw; height:50vw; top:-20vw; right:-12vw; border-radius:50%; background: radial-gradient(circle, var(--accent-glow) 0%, transparent 62%);
+  filter:blur(6px); opacity:.5; transition: background 1s; animation: drift 30s ease-in-out infinite alternate; }
+@keyframes drift{ to{ transform: translate(-3vw,4vw) scale(1.06); } }
+
+/* ============================================================
+   BOOT SEQUENCE
+   ============================================================ */
+#boot{ position:fixed; inset:0; z-index:2000; background:var(--void); display:flex; flex-direction:column; align-items:center; justify-content:center; gap:30px;
+  transition: opacity .7s var(--ease), visibility .7s; }
+#boot.hide{ opacity:0; visibility:hidden; }
+#boot::before{ content:''; position:absolute; inset:0; background: radial-gradient(circle at 50% 42%, var(--accent-glow) 0%, transparent 55%); opacity:.5; }
+
+.boot-beacon{ position:relative; width:88px; height:88px; z-index:1; }
+.boot-beacon svg{ width:100%; height:100%; overflow:visible; }
+.boot-ring{ fill:none; stroke: var(--line); stroke-width:1; }
+.boot-ring-spin{ fill:none; stroke:var(--accent); stroke-width:1; stroke-dasharray: 8 14; transform-origin:50px 50px; animation: ringSpin 6s linear infinite; opacity:.6; }
+@keyframes ringSpin{ to{ transform: rotate(360deg); } }
+.boot-hex-draw{ fill:none; stroke:var(--accent); stroke-width:1.6; stroke-linecap:round; stroke-dasharray:300; stroke-dashoffset:300; animation: drawHex 1.4s var(--ease) forwards; filter: drop-shadow(0 0 8px var(--accent-glow)); }
+@keyframes drawHex{ to{ stroke-dashoffset:0; } }
+.boot-core{ fill:var(--accent); animation: corePulse 2s ease-in-out infinite 1.4s; }
+@keyframes corePulse{ 0%,100%{ opacity:1; } 50%{ opacity:.4; } }
+
+.boot-word{ font-family:var(--font-d); font-size:13px; letter-spacing:6px; color:var(--ink); text-transform:uppercase; z-index:1; font-weight:600; }
+.boot-track{ width:280px; height:2px; background:var(--line-soft); border-radius:2px; overflow:hidden; position:relative; z-index:1; }
+.boot-bar{ position:absolute; inset:0 100% 0 0; background:linear-gradient(90deg, var(--accent), var(--accent-2)); transition: right 2.2s var(--ease); box-shadow:0 0 10px var(--accent-glow); }
+.boot-bar.go{ right:0%; }
+
+/* ============================================================
+   RAIL
+   ============================================================ */
+.rail{ position:fixed; top:0; left:0; bottom:0; width:var(--rail-w); background:var(--surface-1); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+  border-right:1px solid var(--line); z-index:1000; display:flex; flex-direction:column; align-items:center; padding:18px 0; }
+.rail-logo{ width:38px; height:38px; margin-bottom:30px; cursor:pointer; position:relative; }
+.rail-logo svg{ width:100%; height:100%; overflow:visible; }
+.rlg-static{ fill:none; stroke:var(--line); stroke-width:1.2; }
+.rlg-live{ fill:none; stroke:var(--accent); stroke-width:1.7; filter: drop-shadow(0 0 6px var(--accent-glow)); transition: stroke .5s; }
+.rlg-ping{ fill:none; stroke:var(--accent); stroke-width:1.1; opacity:0; transform-origin:50px 50px; animation: ping 2.8s ease-out infinite; transition: stroke .5s; }
+@keyframes ping{ 0%{ transform:scale(.4); opacity:.7; } 100%{ transform:scale(1.9); opacity:0; } }
+
+.rail-portals{ display:flex; flex-direction:column; gap:10px; }
+.rail-btn{ position:relative; width:46px; height:46px; border-radius:13px; background:transparent; border:1px solid transparent; color:var(--dim);
+  display:flex; align-items:center; justify-content:center; font-size:18px; cursor:pointer; transition: all .3s var(--ease-snap); }
+.rail-btn:hover{ background:var(--surface-2); color:var(--ink); }
+.rail-btn.active{ background:var(--accent); color:#080A0E; box-shadow: 0 8px 20px var(--accent-glow); }
+.rail-btn .tip{ position:absolute; left:56px; top:50%; transform:translateY(-50%) translateX(-6px); background:var(--void-3); border:1px solid var(--line);
+  padding:6px 12px; border-radius:8px; font-size:11px; font-weight:600; font-family:var(--font-b); white-space:nowrap; opacity:0; pointer-events:none;
+  transition: all .25s var(--ease); box-shadow: 0 8px 20px rgba(0,0,0,.3); }
+.rail-btn:hover .tip{ opacity:1; transform:translateY(-50%) translateX(0); }
+
+.rail-spacer{ flex:1; }
+.rail-foot{ display:flex; flex-direction:column; gap:10px; align-items:center; }
+.rail-foot button, .rail-foot a{ width:40px; height:40px; border-radius:12px; background:transparent; border:1px solid var(--line); color:var(--dim); cursor:pointer;
+  display:flex; align-items:center; justify-content:center; font-size:15px; transition: all .3s var(--ease); text-decoration:none; }
+.rail-foot button:hover, .rail-foot a:hover{ border-color:var(--accent); color:var(--accent); transform:rotate(15deg); }
+.rail-foot a:hover{ border-color:var(--err); color:var(--err); transform:none; }
+
+/* ============================================================
+   TOP BAR
+   ============================================================ */
+.topbar{ position:fixed; top:0; left:var(--rail-w); right:0; height:var(--topbar-h); z-index:900; display:flex; align-items:center; justify-content:space-between;
+  padding:0 26px; background:var(--surface-1); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border-bottom:1px solid var(--line); }
+.crumb{ font-family:var(--font-m); font-size:11.5px; color:var(--dim); letter-spacing:1px; display:flex; align-items:center; gap:8px; }
+.crumb b{ color:var(--ink); font-weight:700; }
+.crumb .sep{ opacity:.4; }
+.topbar-right{ display:flex; align-items:center; gap:16px; }
+.clock{ font-family:var(--font-m); font-size:11.5px; color:var(--dim); letter-spacing:1px; display:flex; align-items:center; gap:7px; }
+.clock .dot{ width:6px; height:6px; border-radius:50%; background:var(--ok); box-shadow:0 0 8px var(--ok); animation: blink 2.4s ease-in-out infinite; }
+@keyframes blink{ 0%,100%{opacity:1;} 50%{opacity:.3;} }
+.user-badge{ font-family:var(--font-m); font-size:11px; font-weight:600; color:var(--dim); letter-spacing:.4px; }
+.user-badge b{ color:var(--ink); }
+
+/* ============================================================
+   WORKSPACE
+   ============================================================ */
+.workspace{ margin-left:var(--rail-w); padding-top: calc(var(--topbar-h) + 30px); max-width:1180px; padding-left:clamp(16px,3vw,34px); padding-right:clamp(16px,3vw,34px); padding-bottom:60px; }
+
+.header{ margin-bottom:22px; display:flex; align-items:flex-end; justify-content:space-between; gap:16px; flex-wrap:wrap; }
+.header h1{ font-family:var(--portal-font); font-size:clamp(24px,4vw,32px); font-weight:700; letter-spacing:-0.5px; text-transform:var(--tt); margin-bottom:6px; transition: font-family .4s; }
+.header p{ color:var(--dim); font-size:13px; font-family:var(--font-m); }
+.auto-toggle-btn{ display:none; align-items:center; gap:9px; background:var(--surface-2); border:1px solid var(--line); color:var(--ink); padding:11px 18px; border-radius:var(--radius-md);
+  font-size:12px; font-weight:700; cursor:pointer; transition: all .3s var(--ease); font-family:var(--portal-font); text-transform:var(--tt); letter-spacing:var(--ls); }
+body[data-has-auto="1"] .auto-toggle-btn{ display:flex; }
+.auto-toggle-btn:hover{ border-color:var(--accent); color:var(--accent); transform:translateY(-2px); }
+.auto-toggle-btn i{ color:var(--accent); }
+
+/* ---- hero console ---- */
+.console{ background:var(--surface-1); border:1px solid var(--line); border-radius:var(--radius-lg); overflow:hidden; box-shadow:var(--shadow-lg); backdrop-filter: blur(16px); margin-bottom:24px; }
+.console-head{ display:flex; align-items:center; justify-content:space-between; padding:15px 20px; border-bottom:1px solid var(--line-soft); background:var(--surface-2); }
+.console-dots{ display:flex; gap:7px; }
+.console-dots span{ width:9px; height:9px; border-radius:50%; background:var(--line); }
+.console-dots span:nth-child(1){ background:var(--err); opacity:.55; }
+.console-dots span:nth-child(2){ background:var(--warn); opacity:.55; }
+.console-dots span:nth-child(3){ background:var(--ok); opacity:.55; }
+.console-title{ font-family:var(--font-m); font-size:11px; color:var(--dim); letter-spacing:1px; }
+.console-body{ display:flex; }
+.gutter{ width:44px; flex-shrink:0; padding:18px 0; text-align:right; font-family:var(--font-m); font-size:11.5px; color:var(--dimmer); line-height:1.65;
+  border-right:1px solid var(--line-soft); user-select:none; overflow:hidden; white-space:pre; }
+.editor{ flex:1; width:100%; background:transparent; border:1px solid transparent; padding:18px; color:var(--ink); font-family:var(--font-m); font-size:13px; resize:vertical;
+  outline:none; line-height:1.65; min-height:190px; transition: border-color .3s, background .3s; }
+.editor:focus { border-left: 2px solid var(--accent); background: rgba(0,0,0, 0.15); }
+body[data-portal="partsgeek"] .editor{ color:var(--accent-2); font-weight:500; caret-color:var(--accent); }
+body[data-portal="partsgeek"] .editor::placeholder{ color: rgba(45,212,191,0.35); white-space:pre-line; }
+
+.console-foot{ display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; padding:15px 20px; border-top:1px solid var(--line-soft); }
+.meta-data{ font-family:var(--font-m); font-size:10.5px; color:var(--dim); font-weight:700; letter-spacing:1px; text-transform:uppercase; }
+.meta-data span{ color:var(--accent); font-size:13.5px; }
+.btn-group{ display:flex; gap:12px; flex-wrap:wrap; }
+
+.btn{ padding:0 20px; height:44px; border-radius:var(--radius-md); font-size:12.5px; font-weight:var(--btn-w); text-transform:var(--tt);
+  cursor:pointer; transition: all .3s var(--ease-snap); border:none; display:flex; align-items:center; gap:9px; font-family: var(--portal-font); letter-spacing:var(--ls); }
+.btn-secondary{ background:var(--surface-2); color:var(--ink); border:1px solid var(--line); }
+.btn-secondary:hover{ border-color:var(--accent); color:var(--accent); transform:translateY(-2px); }
+.btn-secondary:active{ transform:translateY(0) scale(.97); }
+.btn-primary{ background:var(--accent); color:#080A0E; box-shadow: 0 8px 20px var(--accent-glow); position:relative; overflow:hidden; }
+.btn-primary::after{ content:''; position:absolute; top:0; left:-100%; width:50%; height:100%; background:linear-gradient(90deg, transparent, rgba(255,255,255,.4), transparent); transition:.5s; }
+.btn-primary:hover{ transform:translateY(-2px) scale(1.01); box-shadow: 0 14px 30px var(--accent-glow); }
+.btn-primary:hover::after{ left:150%; }
+.btn-primary:active{ transform:translateY(0) scale(.96); }
+body[data-portal="partsgeek"] .btn-primary::before{ content:'['; margin-right:2px; opacity:.65; }
+body[data-portal="partsgeek"] .btn-primary::after{ content:']'; margin-left:2px; opacity:.65; position:static; background:none; width:auto; height:auto; }
+
+.loader-wrap{ display:none; padding:0 20px 18px; animation: fadeUp .4s var(--ease) forwards; }
+.loader{ height:4px; background:var(--surface-2); border-radius:4px; overflow:hidden; border:1px solid var(--line); position:relative; }
+.loader-bar{ height:100%; width:0%; background: linear-gradient(90deg, var(--accent), var(--accent-2)); transition: width .2s linear; box-shadow:0 0 10px var(--accent-glow); }
+.loader-text{ margin-top:9px; font-family:var(--font-m); font-size:10.5px; color:var(--accent); font-weight:700; text-align:right; letter-spacing:1px; }
+body[data-portal="turn5"] .loader{ height:7px; }
+body[data-portal="turn5"] .loader-bar{ background: repeating-linear-gradient(45deg, var(--accent), var(--accent) 9px, var(--accent-2) 9px, var(--accent-2) 18px); }
+
+@keyframes fadeUp{ from{ opacity:0; transform:translateY(14px);} to{ opacity:1; transform:none; } }
+
+/* ---- unused tracking banner ---- */
+#unused-trackings-wrap{ display:none; margin-bottom:22px; padding:14px 18px; background:var(--warn-soft); border:1px solid var(--warn-line); border-radius:var(--radius-md); }
+
+/* ============================================================
+   HUD STAT STRIP
+   ============================================================ */
+.results-container{ display:none; animation: fadeUp .5s var(--ease) forwards; }
+.hud-strip{ display:grid; grid-template-columns:repeat(4,1fr); gap:1px; background:var(--line); border:1px solid var(--line); border-radius:var(--radius-lg); overflow:hidden; margin-bottom:22px; }
+@media (max-width:720px){ .hud-strip{ grid-template-columns:repeat(2,1fr); } }
+.hud-tile{ background:var(--surface-1); padding:20px; position:relative; transition: background .3s; }
+.hud-tile:hover{ background: var(--surface-2); }
+.hud-tile .h-top{ display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; }
+.hud-tile .h-label{ font-size:10.5px; color:var(--dim); font-weight:800; letter-spacing:1px; text-transform:uppercase; }
+.hud-tile .h-icon{ width:24px; height:24px; border-radius:7px; display:flex; align-items:center; justify-content:center; font-size:12px; color: var(--hc, var(--accent)); background: var(--hs, var(--accent-glow)); }
+.hud-tile .h-val{ font-size:34px; font-weight:700; font-family:var(--font-d); color: var(--hc, var(--ink)); line-height:1; }
+body[data-portal="turn5"] .h-val, body[data-portal="partsgeek"] .h-val{ font-family:var(--font-m); }
+
+/* ============================================================
+   MANIFEST DECK & TABLES
+   ============================================================ */
+.deck{ background:var(--surface-1); border:1px solid var(--line); border-radius:var(--radius-lg); overflow:hidden; box-shadow: var(--shadow-lg); }
+.deck-head{ display:flex; justify-content:space-between; align-items:center; padding:16px 20px; border-bottom:1px solid var(--line); flex-wrap:wrap; gap:12px; }
+.segmented{ display:flex; gap:4px; background:var(--surface-2); padding:4px; border-radius:11px; border:1px solid var(--line-soft); }
+.d-tab{ font-size:11.5px; font-weight:700; color:var(--dim); padding:8px 15px; cursor:pointer; transition:.25s var(--ease); border-radius:8px; text-transform:uppercase; letter-spacing:.5px; white-space:nowrap; }
+.d-tab:hover{ color:var(--ink); }
+.d-tab.active{ color:#080A0E; background:var(--accent); box-shadow: 0 4px 14px var(--accent-glow); }
+
+.table-filters{ display:flex; gap:10px; }
+.filter-dropdown{ background:var(--surface-2); color:var(--ink); border:1px solid var(--line); padding:7px 14px; border-radius:8px; font-size:10.5px;
+  font-weight:700; font-family:var(--font-b); outline:none; cursor:pointer; transition: all .25s; text-transform:uppercase; letter-spacing:.5px; }
+.filter-dropdown:focus, .filter-dropdown:hover{ border-color:var(--accent); box-shadow: 0 0 10px var(--accent-glow); }
+:root[data-theme="dark"] .filter-dropdown option{ background: var(--void-3); }
+
+.table-wrap{ overflow-x:auto; }
+table{ width:100%; border-collapse:separate; border-spacing:0; text-align:left; }
+
+th{ padding:13px clamp(12px,3vw,22px); font-size:11px; color:var(--dim); font-weight:700; text-transform:uppercase; letter-spacing:0.5px; border-bottom:1px solid var(--line); white-space:nowrap; background:var(--surface-2); }
+td{ padding:12px clamp(12px,3vw,22px); font-size:13px; font-weight:500; border-bottom:1px solid var(--line-soft); transition: background .2s; }
+tr:hover td{ background: var(--surface-2); }
+.mono{ font-family:var(--font-m); font-weight:600; }
+.empty-row td{ text-align:center; color:var(--dim); font-style:italic; padding:38px; }
+
+.split-parent td{ background: var(--accent-glow); font-weight:800; color:var(--accent); border-bottom:none; border-top:1px solid var(--line); }
+.split-child td{ border-left:3px solid var(--accent); background: var(--input-bg); }
+
+.badge-st{ display:inline-flex; align-items:center; gap:6px; padding:5px 11px; border-radius:var(--radius-sm); font-size:10.5px; font-weight:700; letter-spacing:0.3px; text-transform:uppercase; box-shadow:none; }
+.badge-st::before{ content:''; width:6px; height:6px; border-radius:50%; background:currentColor; }
+.st-ok{ background:var(--ok-soft); color:var(--ok); border:1px solid var(--ok-line); }
+.st-warn{ background:var(--warn-soft); color:var(--warn); border:1px solid var(--warn-line); }
+.st-err{ background:var(--err-soft); color:var(--err); border:1px solid var(--err-line); }
+.st-transit{ background:var(--transit-soft); color:var(--transit); border:1px solid var(--transit-line); }
+
+.trk-link{ color:var(--accent); text-decoration:none; font-weight:700; transition:color .2s; border-bottom:1px solid transparent; }
+.trk-link:hover{ color:var(--ink); border-bottom:1px solid var(--ink); }
+
+.copy-btn{ opacity:0.35; color:var(--dim); cursor:pointer; transition:all .2s var(--ease); margin-left:8px; font-size:14px; padding: 4px; }
+tr:hover .copy-btn, .split-parent:hover .copy-btn{ opacity:0.7; }
+.copy-btn:hover{ color:var(--accent); transform:scale(1.1); opacity:1; }
+
+.btn-copy-col{ background:transparent; border:1px solid var(--line); color:var(--dim); font-size:10.5px; font-weight:700; padding:3px 7px; border-radius:6px; margin-left:9px; cursor:pointer; transition:.25s; }
+.btn-copy-col:hover{ background:var(--surface-2); color:var(--accent); border-color:var(--accent); }
+.btn-copy-col.copied{ background:var(--accent); color:#080A0E; border-color:var(--accent); }
+
+.concat-btn{ display:none; margin-left:5px; }
+body[data-portal="walmart"] .concat-btn{ display:inline-block; }
+
+.t5-check-wrap{ display:none; margin-right:12px; vertical-align:middle; }
+body[data-portal="turn5"] .t5-check-wrap{ display:inline-block; }
+.t5-chk{ appearance:none; width:15px; height:15px; border:2px solid var(--dim); border-radius:3px; background:transparent; cursor:pointer; transition:.2s; position:relative; margin:0; outline:none; }
+.t5-chk:hover{ border-color:var(--accent); }
+.t5-chk:checked{ background:var(--accent); border-color:var(--accent); }
+.t5-chk:checked::after{ content:''; position:absolute; left:4px; top:1px; width:4px; height:8px; border:solid #080A0E; border-width:0 2px 2px 0; transform:rotate(45deg); }
+body[data-portal="turn5"] tr.row-highlight td{ background: var(--accent-glow) !important; }
+body[data-portal="turn5"] tr.row-highlight td:first-child{ box-shadow: inset 4px 0 0 var(--accent); }
+
+/* ============================================================
+   AUTOMATION DRAWER
+   ============================================================ */
+#drawer-backdrop{ position:fixed; inset:0; background:rgba(0,0,0,.5); backdrop-filter: blur(3px); z-index:1400; opacity:0; pointer-events:none; transition: opacity .35s var(--ease); }
+#drawer-backdrop.open{ opacity:1; pointer-events:auto; }
+.drawer{ position:fixed; top:0; right:0; bottom:0; width:min(460px,92vw); background:var(--void-2); border-left:1px solid var(--line); z-index:1500;
+  transform: translateX(100%); transition: transform .45s var(--ease); overflow-y:auto; box-shadow: -30px 0 60px rgba(0,0,0,.4); }
+.drawer.open{ transform:translateX(0); }
+.drawer-head{ position:sticky; top:0; background:var(--void-2); z-index:2; display:flex; align-items:center; justify-content:space-between; padding:20px 22px; border-bottom:1px solid var(--line); }
+.drawer-head h2{ font-family:var(--font-d); font-size:16px; font-weight:700; display:flex; align-items:center; gap:10px; }
+.drawer-close{ width:32px; height:32px; border-radius:9px; background:var(--surface-2); border:1px solid var(--line); color:var(--dim); cursor:pointer; display:flex; align-items:center; justify-content:center; transition:.25s; }
+.drawer-close:hover{ color:var(--err); border-color:var(--err); transform:rotate(90deg); }
+.drawer-body{ padding:22px; }
+.d-section{ margin-bottom:22px; }
+.d-section-title{ display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; }
+.d-section-title p{ font-size:10.5px; font-weight:700; text-transform:uppercase; color:var(--dim); margin:0; }
+.cookie-status-badge{ font-size:10px; font-weight:700; color:var(--ok); display:inline-flex; align-items:center; gap:5px; }
+.d-editor-wrap .editor{ background:var(--input-bg); border:1px solid var(--line); border-radius:var(--radius-md); padding:14px; min-height:auto; }
+.d-input{ width:100%; background:var(--input-bg); border:1px solid var(--line); border-radius:var(--radius-md); padding:12px 14px; color:var(--ink); font-family:var(--font-m); font-size:12px; outline:none; transition:.25s; }
+.d-input:focus, .d-editor-wrap .editor:focus{ border-color:var(--accent); box-shadow: 0 0 0 3px var(--accent-glow); background: var(--void-2); }
+.d-grid2{ display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+.auto-logs{ margin-top:16px; padding:14px; background:var(--input-bg); border:1px solid var(--line); border-radius:var(--radius-sm); height:170px; overflow-y:auto; font-family:var(--font-m); font-size:10.5px; display:none; }
+
+/* Transitions */
+#portal-transit{ position:fixed; inset:0; z-index:9999; pointer-events:none; overflow:hidden; }
+.t-walmart{ position:absolute; top:0; bottom:0; right:0; width:0vw; background:#4C8DFF; transition: width .55s var(--ease); }
+.t-walmart.active{ width:100vw; left:0; right:auto; }
+
+.stagger-1{ opacity:0; transform: translateY(16px); transition: all .55s var(--ease) .05s; }
+.stagger-2{ opacity:0; transform: translateY(16px); transition: all .55s var(--ease) .12s; }
+.stagger-3{ opacity:0; transform: translateY(16px); transition: all .55s var(--ease) .19s; }
+.stagger-in{ opacity:1; transform:none; }
+
+.creator-signature{ margin:50px auto 20px; text-align:center; color:var(--dim); display:flex; flex-direction:column; align-items:center; gap:5px; padding:12px 22px; width:max-content; }
+.sig-name{ font-family:var(--font-d); font-weight:700; color:var(--ink); }
+
+@media (max-width: 760px){
+  :root{ --rail-w:0px; }
+  .rail{ display:none; }
+  .topbar{ left:0; }
+  .workspace{ margin-left:0; }
+}
+@media (prefers-reduced-motion: reduce){ *{ animation:none !important; transition-duration:.12s !important; } }
+</style>
+</head>
+<body data-theme="dark" data-portal="walmart" data-has-auto="1">
+
+<!-- BOOT -->
+<div id="boot">
+  <div class="boot-beacon">
+    <svg viewBox="0 0 100 100">
+      <circle class="boot-ring" cx="50" cy="50" r="44"/>
+      <circle class="boot-ring-spin" cx="50" cy="50" r="44"/>
+      <polygon class="boot-hex-draw" points="50,10 86,30 86,70 50,90 14,70 14,30"/>
+      <circle class="boot-core" cx="50" cy="50" r="4"/>
+    </svg>
+  </div>
+  <div class="boot-word">Origin</div>
+  <div class="boot-checklist" id="bootChecklist">
+    <div class="boot-item" data-i="0"><div class="stat"><div class="spin"></div></div><div class="label">Linking WMS core…</div></div>
+    <div class="boot-item" data-i="1"><div class="stat"><div class="spin"></div></div><div class="label">Establishing carrier live-feed…</div></div>
+    <div class="boot-item" data-i="2"><div class="stat"><div class="spin"></div></div><div class="label">Opening Walmart channel…</div></div>
+    <div class="boot-item" data-i="3"><div class="stat"><div class="spin"></div></div><div class="label">Opening Turn5 channel…</div></div>
+    <div class="boot-item" data-i="4"><div class="stat"><div class="spin"></div></div><div class="label">Opening PartsGeek channel…</div></div>
+  </div>
+  <div class="boot-track"><div class="boot-bar" id="bootBar"></div></div>
+</div>
+
+<div id="field"><div class="field-grid"></div><div class="field-glow"></div></div>
+
+<div id="portal-transit">
+  <div id="t-walmart" class="t-walmart"></div>
+  <div id="t-turn5-top" class="t-turn5-top"></div>
+  <div id="t-turn5-bot" class="t-turn5-bot"></div>
+  <div id="t-turn5-laser" class="t-turn5-laser"></div>
+  <div id="t-pg-overlay" class="t-pg-overlay"></div>
+  <div id="t-pg-scan" class="t-pg-scan"></div>
+</div>
+
+<!-- RAIL -->
+<div class="rail">
+  <div class="rail-logo" title="Origin">
+    <svg viewBox="0 0 100 100">
+      <polygon class="rlg-static" points="50,10 86,30 86,70 50,90 14,70 14,30"/>
+      <polygon class="rlg-live" points="50,10 86,30 86,70 50,90 14,70 14,30"/>
+      <circle class="rlg-ping" cx="50" cy="50" r="18"/>
+      <circle cx="50" cy="50" r="4" fill="var(--accent)"/>
+    </svg>
+  </div>
+  <div class="rail-portals">
+    <button class="rail-btn active" data-portal="walmart" onclick="switchPortal('walmart', this)"><i class="bi bi-shop"></i><span class="tip">Walmart</span></button>
+    <button class="rail-btn" data-portal="turn5" onclick="switchPortal('turn5', this)"><i class="bi bi-cone-striped"></i><span class="tip">Turn5</span></button>
+    <button class="rail-btn" data-portal="partsgeek" onclick="switchPortal('partsgeek', this)"><i class="bi bi-cpu"></i><span class="tip">PartsGeek</span></button>
+  </div>
+  <div class="rail-spacer"></div>
+  <div class="rail-foot">
+    <button onclick="toggleTheme()" title="Toggle interface mode"><i id="theme-icon" class="bi bi-moon-stars-fill"></i></button>
+    <a href="/logout" title="Terminate session"><i class="bi bi-power"></i></a>
+  </div>
+</div>
+
+<!-- TOPBAR -->
+<div class="topbar">
+  <div class="crumb">ORIGIN <span class="sep">/</span> <b id="crumb-portal">Walmart</b></div>
+  <div class="topbar-right">
+    <div class="clock"><span class="dot"></span><span id="clockText">00:00:00</span></div>
+    <div class="user-badge"><b>{{ company }}</b> · {{ username }}</div>
+  </div>
+</div>
+
+<div class="workspace">
+  <div class="header stagger-1" id="ws-header">
+    <div>
+      <h1>Walmart Retail Operations</h1>
+      <p>Standard fulfillment pipeline — awaiting order identifiers.</p>
+    </div>
+    <button class="auto-toggle-btn" onclick="toggleDrawer()"><i class="bi bi-robot"></i> Automation engine</button>
+  </div>
+
+  <div class="console stagger-2" id="input-module">
+    <div class="console-head">
+      <div class="console-dots"><span></span><span></span><span></span></div>
+      <div class="console-title" id="console-title">walmart@origin: ~/manifest-input</div>
+    </div>
+    <div class="console-body">
+      <div class="gutter" id="gutter">1</div>
+      <textarea id="orders" class="editor" placeholder="> Paste Walmart order numbers, one per line…" oninput="updateStats()" onscroll="syncGutter()"></textarea>
+    </div>
+    <div class="console-foot">
+      <div class="meta-data">Orders entered: <span id="node-count">0</span></div>
+      <div class="btn-group">
+        <button class="btn btn-primary walmart-only" id="btn-instantly" onclick="getOrdersInstantly()" style="background:var(--transit); color:#080A0E; box-shadow: 0 8px 20px var(--transit-soft);">
+            <i class="bi bi-cloud-download"></i> Get Orders Instantly
+        </button>
+        <input type="file" id="file" accept=".xlsx,.xls,.csv" style="display:none" onchange="handleExcel(event)">
+        <button class="btn btn-secondary" id="btn-upload" onclick="document.getElementById('file').click()"><i class="bi bi-file-earmark-spreadsheet"></i> Upload file</button>
+        <button class="btn btn-primary" onclick="execute()"><i class="bi bi-lightning-charge-fill"></i> Run lookup</button>
+      </div>
+    </div>
+    <div class="loader-wrap" id="loader-wrap">
+      <div class="loader"><div class="loader-bar" id="loader-bar"></div></div>
+      <div class="loader-text" id="loader-txt">PROCESSING ORDERS…</div>
+    </div>
+  </div>
+
+  <div class="results-container" id="results">
+    <div class="hud-strip">
+      <div class="hud-tile" style="--hc:var(--accent); --hs:var(--accent-glow);">
+        <div class="h-top"><span class="h-label">Orders</span><span class="h-icon"><i class="bi bi-box-seam"></i></span></div>
+        <div class="h-val" id="st-tot">0</div>
+      </div>
+      <div class="hud-tile" style="--hc:var(--ok); --hs:var(--ok-soft);">
+        <div class="h-top"><span class="h-label">Shipped</span><span class="h-icon"><i class="bi bi-truck"></i></span></div>
+        <div class="h-val" id="st-ok">0</div>
+      </div>
+      <div class="hud-tile" style="--hc:var(--warn); --hs:var(--warn-soft);">
+        <div class="h-top"><span class="h-label">No tracking</span><span class="h-icon"><i class="bi bi-geo-alt"></i></span></div>
+        <div class="h-val" id="st-warn">0</div>
+      </div>
+      <div class="hud-tile" style="--hc:var(--err); --hs:var(--err-soft);">
+        <div class="h-top"><span class="h-label">Did not show</span><span class="h-icon"><i class="bi bi-exclamation-octagon"></i></span></div>
+        <div class="h-val" id="st-err">0</div>
+      </div>
+    </div>
+
+    <div class="deck">
+      <div class="deck-head">
+        <div class="segmented">
+          <div class="d-tab active" onclick="setTab('shipped', this)">Shipped (<span id="tOk">0</span>)</div>
+          <div class="d-tab" onclick="setTab('notracking', this)">No tracking (<span id="tWarn">0</span>)</div>
+          <div class="d-tab" onclick="setTab('notfound', this)">Did not show (<span id="tErr">0</span>)</div>
+        </div>
+        <div class="table-filters">
+          <select id="filter-facility" class="filter-dropdown" onchange="applyFilters()"><option value="ALL">All facilities</option></select>
+          <select id="filter-status" class="filter-dropdown" onchange="applyFilters()"><option value="ALL">All statuses</option></select>
+        </div>
+      </div>
+
+      <div class="table-wrap">
+        <table id="tbl-shipped">
+          <thead><tr>
+            <th>Origin PO <button class="btn-copy-col" onclick="copyColumn('bd-shipped', 0, this)"><i class="bi bi-files"></i></button><button class="btn-copy-col concat-btn" onclick="copyColumnConcat('bd-shipped', 0, this)">Concat</button></th>
+            <th>WMS SO <button class="btn-copy-col" onclick="copyColumn('bd-shipped', 1, this)"><i class="bi bi-files"></i></button><button class="btn-copy-col concat-btn" onclick="copyColumnConcat('bd-shipped', 1, this)">Concat</button></th>
+            <th>Cust order # <button class="btn-copy-col" onclick="copyColumn('bd-shipped', 2, this)"><i class="bi bi-files"></i></button><button class="btn-copy-col concat-btn" onclick="copyColumnConcat('bd-shipped', 2, this)">Concat</button></th>
+            <th>Combined PO <button class="btn-copy-col" onclick="copyColumn('bd-shipped', 3, this)"><i class="bi bi-files"></i></button><button class="btn-copy-col concat-btn" onclick="copyColumnConcat('bd-shipped', 3, this)">Concat</button></th>
+            <th>Facility</th><th>Created date</th>
+            <th>Tracking number <button class="btn-copy-col" onclick="copyColumn('bd-shipped', 6, this)"><i class="bi bi-files"></i></button></th>
+            <th>Status</th>
+          </tr></thead>
+          <tbody id="bd-shipped"></tbody>
+        </table>
+        <table id="tbl-notracking" style="display:none;">
+          <thead><tr>
+            <th>Origin PO <button class="btn-copy-col" onclick="copyColumn('bd-notracking', 0, this)"><i class="bi bi-files"></i></button><button class="btn-copy-col concat-btn" onclick="copyColumnConcat('bd-notracking', 0, this)">Concat</button></th>
+            <th>WMS SO <button class="btn-copy-col" onclick="copyColumn('bd-notracking', 1, this)"><i class="bi bi-files"></i></button><button class="btn-copy-col concat-btn" onclick="copyColumnConcat('bd-notracking', 1, this)">Concat</button></th>
+            <th>Cust order # <button class="btn-copy-col" onclick="copyColumn('bd-notracking', 2, this)"><i class="bi bi-files"></i></button><button class="btn-copy-col concat-btn" onclick="copyColumnConcat('bd-notracking', 2, this)">Concat</button></th>
+            <th>Combined PO <button class="btn-copy-col" onclick="copyColumn('bd-notracking', 3, this)"><i class="bi bi-files"></i></button><button class="btn-copy-col concat-btn" onclick="copyColumnConcat('bd-notracking', 3, this)">Concat</button></th>
+            <th>Facility</th><th>Created date</th><th>System log</th><th>Status</th>
+          </tr></thead>
+          <tbody id="bd-notracking"></tbody>
+        </table>
+        <table id="tbl-notfound" style="display:none;">
+          <thead><tr>
+            <th>Origin PO <button class="btn-copy-col" onclick="copyColumn('bd-notfound', 0, this)"><i class="bi bi-files"></i></button><button class="btn-copy-col concat-btn" onclick="copyColumnConcat('bd-notfound', 0, this)">Concat</button></th>
+            <th>Cust order # <button class="btn-copy-col" onclick="copyColumn('bd-notfound', 1, this)"><i class="bi bi-files"></i></button><button class="btn-copy-col concat-btn" onclick="copyColumnConcat('bd-notfound', 1, this)">Concat</button></th>
+            <th>Combined PO <button class="btn-copy-col" onclick="copyColumn('bd-notfound', 2, this)"><i class="bi bi-files"></i></button><button class="btn-copy-col concat-btn" onclick="copyColumnConcat('bd-notfound', 2, this)">Concat</button></th>
+            <th>System log</th>
+          </tr></thead>
+          <tbody id="bd-notfound"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="creator-signature">
+    <div style="font-size:12px; font-weight:500;">Crafted by <span class="sig-name">Developer</span></div>
+    <div style="font-size:9.5px; opacity:.65; font-family:var(--font-m);">&copy; 2026 &middot; Open Source Build</div>
+  </div>
+</div>
+
+<!-- AUTOMATION DRAWER -->
+<div id="drawer-backdrop" onclick="toggleDrawer()"></div>
+<div class="drawer" id="automation-drawer">
+  <div class="drawer-head">
+    <h2><i class="bi bi-robot" id="drawer-icon"></i> <span id="drawer-title">Walmart automation</span></h2>
+    <button class="drawer-close" onclick="toggleDrawer()"><i class="bi bi-x-lg"></i></button>
+  </div>
+  <div class="drawer-body">
+
+    <!-- WALMART -->
+    <div class="walmart-only">
+      <div class="d-section">
+        <div class="d-section-title"><p>Session cookies (auto-saved locally)</p><span id="cookie-time-badge" class="cookie-status-badge"></span></div>
+        <div class="d-editor-wrap"><textarea id="walmart-cookies" class="editor" style="height:90px;" placeholder="> [ { &quot;name&quot;: &quot;_userSession&quot;, &quot;value&quot;: &quot;...&quot; } ]" oninput="saveCookiesLocally()"></textarea></div>
+      </div>
+
+      <div class="d-grid2" style="margin-bottom:22px; padding-top:20px; border-top:1px solid var(--line-soft);">
+        <div class="d-section" style="margin-bottom:0;">
+          <div class="d-section-title"><p>PO numbers</p></div>
+          <div class="d-editor-wrap"><textarea id="walmart-auto-po" class="editor" style="height:120px;" placeholder="> PO-10001&#10;> PO-10002"></textarea></div>
+        </div>
+        <div class="d-section" style="margin-bottom:0;">
+          <div class="d-section-title"><p>Tracking numbers</p></div>
+          <div class="d-editor-wrap"><textarea id="walmart-auto-tracking" class="editor" style="height:120px;" placeholder="> 1Z9999999999999999&#10;> 1Z8888888888888888"></textarea></div>
+        </div>
+      </div>
+
+      <button class="btn btn-primary walmart-only" onclick="executeWalmartAutomation()" style="width:100%; justify-content:center;"><i class="bi bi-cloud-arrow-up-fill"></i> Execute automation pipeline</button>
+      <div id="auto-logs-wm" class="auto-logs"></div>
+    </div>
+
+    <!-- PARTSGEEK -->
+    <div class="partsgeek-only">
+      <div class="d-section">
+        <div class="d-section-title"><p>Session cookies (auto-saved locally)</p><span id="pg-cookie-time-badge" class="cookie-status-badge"></span></div>
+        <div class="d-editor-wrap"><textarea id="pg-cookies" class="editor" style="height:70px;" placeholder="> Paste RAW string starting with: COMMERCE_DEVICE_UUID=..." oninput="savePGCookiesLocally()"></textarea></div>
+      </div>
+      <div class="d-section">
+        <div class="d-section-title"><p>Comment template — {facility} {tracking} {date}</p></div>
+        <input id="pg-template" class="d-input" value="{facility} : {tracking} - ORDER WAS ESCALATED TO BE SHIPPED ( {date} ) // [AGENT_NAME]." />
+      </div>
+
+      <div class="d-grid2" style="margin-bottom:22px; padding-top:20px; border-top:1px solid var(--line-soft);">
+        <div class="d-section" style="margin-bottom:0;">
+          <div class="d-section-title"><p>Orders</p></div>
+          <div class="d-editor-wrap"><textarea id="pg-auto-po" class="editor" style="height:130px;" placeholder="> PG10001"></textarea></div>
+        </div>
+        <div class="d-section" style="margin-bottom:0;">
+          <div class="d-section-title"><p>Tracking</p></div>
+          <div class="d-editor-wrap"><textarea id="pg-auto-tracking" class="editor" style="height:130px;" placeholder="> 1Z9999999999999999"></textarea></div>
+        </div>
+      </div>
+
+      <button class="btn btn-primary partsgeek-only" onclick="executePartsGeekAutomation()" style="width:100%; justify-content:center;"><i class="bi bi-cloud-arrow-up-fill"></i> Execute automation pipeline</button>
+      <div id="auto-logs-pg" class="auto-logs"></div>
+    </div>
+
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script>
+window.orderMapping = {};
+
+document.addEventListener("DOMContentLoaded", () => {
+  setTimeout(() => {
+    document.getElementById('boot').classList.add('hide');
+    document.querySelectorAll('.stagger-1, .stagger-2, .stagger-3').forEach(el => el.classList.add('stagger-in'));
+    syncGutter();
+  }, 1000);
+  loadSavedCookies();
+  setInterval(() => {
+    document.getElementById('clockText').textContent = new Date().toLocaleTimeString('en-US', { hour12:false });
+  }, 1000);
+});
+
+function updateGutter(){
+  const val = document.getElementById('orders').value;
+  const lines = Math.max(1, val.split('\n').length);
+  let out = ''; for (let i = 1; i <= lines; i++) out += i + '\n';
+  document.getElementById('gutter').textContent = out.trim();
+}
+function syncGutter(){ document.getElementById('gutter').scrollTop = document.getElementById('orders').scrollTop; }
+
+function saveCookiesLocally(){
+  const cookies = document.getElementById('walmart-cookies').value;
+  if (cookies.trim()){
+    localStorage.setItem('origin_wm_cookies', cookies);
+    localStorage.setItem('origin_wm_cookie_time', new Date().toISOString());
+  } else {
+    localStorage.removeItem('origin_wm_cookies');
+    localStorage.removeItem('origin_wm_cookie_time');
+  }
+}
+function loadSavedCookies(){
+  const wmCookies = localStorage.getItem('origin_wm_cookies');
+  if (wmCookies) document.getElementById('walmart-cookies').value = wmCookies;
+}
+
+function toggleTheme(){
+  const target = document.body.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+  document.documentElement.setAttribute('data-theme', target);
+  document.body.setAttribute('data-theme', target);
+}
+
+function toggleDrawer(){
+  document.getElementById('automation-drawer').classList.toggle('open');
+  document.getElementById('drawer-backdrop').classList.toggle('open');
+}
+
+function populateAutoFromTable(silent = false) {
+  let dataSrc = [...(lastResponseData.shipped || []), ...(lastResponseData.no_tracking || [])];
+  const fac = document.getElementById('filter-facility').value;
+  const dataToUse = dataSrc.filter(i => fac === 'ALL' || i.ship_from === fac);
+  if (!dataToUse.length) return;
+
+  const pos = []; const trackings = [];
+  dataToUse.forEach(item => {
+      pos.push(item.order);
+      trackings.push(item.tracking && item.tracking !== 'N/A' ? item.tracking.trim() : 'No TN');
+  });
+
+  document.getElementById('walmart-auto-po').value = pos.join('\n');
+  document.getElementById('walmart-auto-tracking').value = trackings.join('\n');
+}
+
+let currentPortal = 'walmart';
+function switchPortal(portal, el){
+  if (currentPortal === portal) return;
+  currentPortal = portal;
+  document.querySelectorAll('.rail-btn').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  document.body.setAttribute('data-portal', portal);
+}
+
+async function getOrdersInstantly() {
+    const savedCookies = localStorage.getItem('origin_wm_cookies');
+    if (!savedCookies) {
+        alert("Please paste your Walmart Session Cookies in the Automation Drawer first.");
+        toggleDrawer(); return;
+    }
+
+    const btn = document.getElementById('btn-instantly');
+    const ogText = btn.innerHTML;
+    btn.innerHTML = `<i class="bi bi-arrow-repeat spin"></i> Fetching...`;
+    btn.disabled = true;
+
+    try {
+        const res = await fetch('/api/get-walmart-orders', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ session_cookie: savedCookies })
+        });
+        const data = await res.json();
+        if (data.success && data.orders.length > 0) {
+            document.getElementById('orders').value = data.orders.join('\n');
+            updateStats(); execute();
+        } else {
+            alert(data.error || "No unshipped orders found.");
+        }
+    } catch (err) { alert("System Error: " + err.message); } 
+    finally { btn.innerHTML = ogText; btn.disabled = false; }
+}
+
+async function executeWalmartAutomation(){
+  const cookieData = document.getElementById('walmart-cookies').value.trim();
+  const poData = document.getElementById('walmart-auto-po').value.trim();
+  const trkData = document.getElementById('walmart-auto-tracking').value.trim();
+  const logs = document.getElementById('auto-logs-wm');
+
+  if (!cookieData || !poData || !trkData){ alert("Missing session data or payload."); return; }
+  saveCookiesLocally();
+
+  const poLines = poData.split('\n').map(l => l.trim()).filter(Boolean);
+  const trkLines = trkData.split('\n').map(l => l.trim()).filter(Boolean);
+  
+  logs.innerHTML = `<div style="color:var(--accent);">[SYSTEM] Executing automation pipeline...</div>`;
+  logs.style.display = 'block';
+
+  for (let i = 0; i < poLines.length; i++){
+    try {
+      const res = await fetch('/api/update-walmart', { method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ po_number: poLines[i], tracking_number: trkLines[i], session_cookie: cookieData }) });
+      const data = await res.json();
+      if (data.success) logs.innerHTML += `<div style="color:var(--ok);">[OK] PO: ${poLines[i]} updated.</div>`;
+      else logs.innerHTML += `<div style="color:var(--err);">[FAIL] PO: ${poLines[i]} -> ${data.error}</div>`;
+    } catch(err) { logs.innerHTML += `<div style="color:var(--err);">[ERROR] Network drop on ${poLines[i]}</div>`; }
+    logs.scrollTop = logs.scrollHeight;
+    await new Promise(r => setTimeout(r, 300));
+  }
+}
+
+function updateStats(){
+  const val = document.getElementById('orders').value;
+  const lines = val.split(/\n/).filter(l => l.trim());
+  document.getElementById('node-count').innerText = lines.length;
+  updateGutter();
+}
+
+function handleExcel(e){
+  const file = e.target.files[0]; if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function(evt){
+    const workbook = XLSX.read(new Uint8Array(evt.target.result), { type: 'array' });
+    const rows = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]], { header: 1 });
+    if (!rows.length) return;
+    const lines = []; const seen = new Set();
+    for (let i = 1; i < rows.length; i++){
+      const val = String(rows[i][0] || '').trim();
+      if (val && !seen.has(val)){ seen.add(val); lines.push(val); }
+    }
+    document.getElementById('orders').value = lines.join('\n');
+    updateStats();
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+function setTab(id, el){
+  document.querySelectorAll('.d-tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  ['shipped', 'notracking', 'notfound'].forEach(t => { document.getElementById(`tbl-${t}`).style.display = t === id ? 'table' : 'none'; });
+}
+
+async function copyData(txt, el){
+  try{ await navigator.clipboard.writeText(txt); } catch(e){}
+  const og = el.className; el.className = 'bi bi-check-all copy-btn'; setTimeout(() => { el.className = og; }, 1000);
+}
+async function copyColumn(tbodyId, colIndex, btnElement){
+  const rows = document.querySelectorAll(`#${tbodyId} tr:not(.split-parent)`);
+  let textArray = [];
+  rows.forEach(row => { const cell = row.cells[colIndex]; if (cell && cell.dataset.raw) textArray.push(cell.dataset.raw); });
+  if (textArray.length > 0){
+    await navigator.clipboard.writeText(textArray.join('\n'));
+    btnElement.innerHTML = '<i class="bi bi-check-all"></i>'; setTimeout(() => btnElement.innerHTML = '<i class="bi bi-files"></i>', 1500);
+  }
+}
+async function copyColumnConcat(tbodyId, colIndex, btnElement){
+  const rows = document.querySelectorAll(`#${tbodyId} tr:not(.split-parent)`);
+  let textArray = [];
+  rows.forEach(row => { const cell = row.cells[colIndex]; if (cell && cell.dataset.raw) textArray.push(cell.dataset.raw); });
+  textArray = [...new Set(textArray)];
+  if (textArray.length > 0){
+    await navigator.clipboard.writeText(textArray.join(','));
+    btnElement.innerHTML = '<i class="bi bi-check-all"></i>'; setTimeout(() => btnElement.innerHTML = 'Concat', 1500);
+  }
+}
+
+function getStatusBadge(statusText){
+  if (!statusText) return `<span class="badge-st st-ok">SHIPPED</span>`;
+  const s = statusText.toUpperCase();
+  if (s.includes('DELIVERED')) return `<span class="badge-st st-ok">${s}</span>`;
+  if (s.includes('EXCEPTION') || s.includes('DELAY')) return `<span class="badge-st st-err">${s}</span>`;
+  if (s.includes('TRANSIT')) return `<span class="badge-st st-transit">${s}</span>`;
+  return `<span class="badge-st st-ok">${s}</span>`;
+}
+
+let lastResponseData = { shipped: [], no_tracking: [], not_found: [] };
+function populateFilters(data){
+  const facilities = new Set(); const statuses = new Set();
+  [...data.shipped, ...data.no_tracking].forEach(item => { if (item.ship_from) facilities.add(item.ship_from); if (item.status) statuses.add(item.status); });
+  const facSelect = document.getElementById('filter-facility'); const statSelect = document.getElementById('filter-status');
+  facSelect.innerHTML = '<option value="ALL">All facilities</option>'; statSelect.innerHTML = '<option value="ALL">All statuses</option>';
+  Array.from(facilities).sort().forEach(f => facSelect.innerHTML += `<option value="${f}">${f}</option>`);
+  Array.from(statuses).sort().forEach(s => statSelect.innerHTML += `<option value="${s}">${s}</option>`);
+}
+
+function applyFilters(){
+  if (!lastResponseData.shipped) return;
+  const fac = document.getElementById('filter-facility').value;
+  const stat = document.getElementById('filter-status').value;
+  const filterFn = (item) => (fac === 'ALL' || item.ship_from === fac) && (stat === 'ALL' || item.status === stat);
+  
+  const fShipped = lastResponseData.shipped.filter(filterFn);
+  const fNoTrack = lastResponseData.no_tracking.filter(filterFn);
+  const fNotFound = (fac === 'ALL' && stat === 'ALL') ? lastResponseData.not_found : [];
+
+  renderGroupedTable('bd-shipped', fShipped, 'shipped');
+  renderGroupedTable('bd-notracking', fNoTrack, 'notracking');
+
+  if (fNotFound.length > 0){
+    document.getElementById('bd-notfound').innerHTML = fNotFound.map(r => `
+      <tr>
+        <td data-raw="${r.order}" class="mono" style="color:var(--err);">${r.order} <i class="bi bi-copy copy-btn" onclick="copyData('${r.order}', this)"></i></td>
+        <td class="mono">-</td>
+        <td class="mono">-</td>
+        <td><span class="badge-st st-err">Did not show</span> ${r.reason}</td>
+      </tr>`).join('');
+  } else {
+    document.getElementById('bd-notfound').innerHTML = `<tr class="empty-row"><td colspan="4">No records in this category.</td></tr>`;
+  }
+
+  document.getElementById('tOk').innerText = fShipped.length;
+  document.getElementById('tWarn').innerText = fNoTrack.length;
+  document.getElementById('tErr').innerText = fNotFound.length;
+}
+
+function renderGroupedTable(tbodyId, dataArray, type){
+  const grouped = {};
+  dataArray.forEach(item => { if (!grouped[item.order]) grouped[item.order] = []; grouped[item.order].push(item); });
+
+  let html = '';
+  for (const [order, items] of Object.entries(grouped)){
+    const isSplit = items.length > 1;
+    if (isSplit){
+      html += `<tr class="split-parent"><td colspan="8"><i class="bi bi-diagram-2"></i> ${order} <span style="float:right;">${items.length} lines</span></td></tr>`;
+    }
+    items.forEach((row, i) => {
+      let branch = isSplit ? (i === items.length - 1 ? '╚═ ' : '╠═ ') : '';
+      let rowClass = isSplit ? 'split-child' : '';
+      let warningBadge = row.has_prefix_warning ? `<span class="badge-st st-err" style="font-size:8px; padding:1px 4px;">RESTRICTED</span>` : '';
+      let soDisplay = row.has_prefix_warning ? `<span style="color:var(--err);">${row.so_number}</span>` : row.so_number;
+
+      if (type === 'shipped'){
+        let trk = row.tracking ? `<a href="https://www.fedex.com/fedextrack/?trknbr=${row.tracking}" target="_blank" class="trk-link">${row.tracking}</a>` : `<span>N/A</span>`;
+        html += `<tr class="${rowClass}">
+          <td data-raw="${order}" class="mono">${order}</td>
+          <td data-raw="${row.so_number}" class="mono">${branch}${soDisplay} ${warningBadge}</td>
+          <td data-raw="${row.customer_order}" class="mono">${row.customer_order || 'N/A'}</td>
+          <td data-raw="N/A" class="mono">N/A</td>
+          <td class="mono">${row.ship_from || 'N/A'}</td>
+          <td class="mono" style="color:var(--dim)">${row.created_date || 'N/A'}</td>
+          <td data-raw="${row.tracking || ''}" class="mono">${trk}</td>
+          <td>${getStatusBadge(row.status)}</td>
+        </tr>`;
+      } else {
+        html += `<tr class="${rowClass}">
+          <td data-raw="${order}" class="mono">${order}</td>
+          <td data-raw="${row.so_number}" class="mono">${branch}${soDisplay} ${warningBadge}</td>
+          <td data-raw="${row.customer_order}" class="mono">${row.customer_order || 'N/A'}</td>
+          <td data-raw="N/A" class="mono">N/A</td>
+          <td class="mono">${row.ship_from || 'N/A'}</td>
+          <td class="mono" style="color:var(--dim)">${row.created_date || 'N/A'}</td>
+          <td class="mono" style="color:var(--dim)">${row.reason || 'N/A'}</td>
+          <td><span class="badge-st st-warn">${row.status || 'N/A'}</span></td>
+        </tr>`;
+      }
+    });
+  }
+  if (!html) html = `<tr class="empty-row"><td colspan="8">No records in this category.</td></tr>`;
+  document.getElementById(tbodyId).innerHTML = html;
+}
+
+async function execute(){
+  const raw = document.getElementById('orders').value;
+  if (!raw.trim()) return;
+
+  let finalOrders = [...new Set(raw.split(/\n/).map(s => s.trim()).filter(Boolean))];
+  if (!finalOrders.length) return;
+
+  document.querySelector('.console-foot').style.display = 'none';
+  document.getElementById('loader-wrap').classList.add('active');
+  document.getElementById('results').style.display = 'none';
+
+  const fill = document.getElementById('loader-bar');
+  let p = 0;
+  const sim = setInterval(() => { p += 10; if (p > 90) p = 90; fill.style.width = p + '%'; }, 150);
+
+  try{
+    const res = await fetch('/api/extract', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ orders: finalOrders.join('\n') }) });
+    if (res.status === 401){ window.location.href = '/'; return; }
+    const data = await res.json();
+
+    clearInterval(sim); fill.style.width = '100%';
+    if (data.error) throw new Error(data.error);
+
+    lastResponseData = data;
+    populateFilters(data);
+    applyFilters();
+
+    document.getElementById('st-tot').innerText = data.shipped.length + data.no_tracking.length + data.not_found.length;
+    document.getElementById('st-ok').innerText = data.shipped.length;
+    document.getElementById('st-warn').innerText = data.no_tracking.length;
+    document.getElementById('st-err').innerText = data.not_found.length;
+
+    setTimeout(() => {
+      document.getElementById('loader-wrap').classList.remove('active');
+      document.querySelector('.console-foot').style.display = 'flex';
+      document.getElementById('results').style.display = 'block';
+      fill.style.width = '0%';
+      populateAutoFromTable(true);
+    }, 400);
+  } catch(err){
+    clearInterval(sim); document.getElementById('loader-wrap').classList.remove('active');
+    document.querySelector('.console-foot').style.display = 'flex';
+    alert("Exception: " + err.message);
+  }
+}
+</script>
+</body>
+</html>

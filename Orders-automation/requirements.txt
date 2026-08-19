@@ -1,0 +1,5 @@
+Flask[async]==3.0.3
+aiohttp==3.9.5
+gunicorn==22.0.0
+pandas==2.2.2
+openpyxl==3.1.2
