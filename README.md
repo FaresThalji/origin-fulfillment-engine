@@ -1,9 +1,9 @@
 
 # ORIGIN · Operations Console & Fulfillment Engine
 
-**ORIGIN** is a high-performance, dark-mode operations console and order fulfillment automation tool designed to bridge warehouse management systems (WMS), live carrier tracking feeds, and marketplace channels (such as Walmart). 
+ORIGIN is a production-focused fulfillment automation platform built to streamline multi-channel e-commerce operations. It connects warehouse management systems (WMS), carrier tracking services, and marketplace channels through automated workflows for order processing, fulfillment monitoring, tracking, and exception handling.
 
-It features an ultra-low latency, modern developer-first interface inspired by Linear and Vercel design principles.
+Designed with a high-performance, developer-first architecture, ORIGIN provides a unified operations interface for managing complex fulfillment workflows while reducing repetitive manual processes.
 
 ---
 
