@@ -9,12 +9,15 @@ Designed with a high-performance, developer-first architecture, ORIGIN provides 
 
 ## 🚀 Key Features
 
-* **Unified Multi-Channel Dashboard:** A high-speed command center featuring live KPI monitoring (Shipped, No Tracking, Exceptions, Total Processed).
-* **Batch Order Extraction:** A streamlined command input node supporting newline, comma, or space-separated PO numbers for bulk warehouse lookups.
-* **WMS & Carrier Integration:** Asynchronous backend (`asyncio` / `aiohttp`) designed to query warehouse data and cross-reference live shipping milestones concurrently.
-* **Marketplace Automation Workspace:** Dedicated portals to handle channel-specific sync tasks, cookie authentication management, and automated fulfillment push updates.
-* **Precision Ergonomics:** Built-in category filters, smart prefix warning flags, clickable tracking references, detail inspection drawers, and instant spreadsheet parsing (`xlsx`/`csv`).
+Multi-Channel Operations Console: A unified workspace for monitoring fulfillment activity across marketplace channels, with real-time KPIs, processing status, tracking visibility, and exception monitoring.
 
+Batch Order Processing: Bulk order lookup and processing through flexible input handling for PO numbers, enabling operators to process large order sets without repetitive manual entry.
+
+WMS & Carrier Integration: Asynchronous data retrieval and concurrent processing designed to connect warehouse systems with carrier tracking data and provide up-to-date fulfillment status.
+
+Marketplace Automation: Dedicated automation workflows for marketplace-specific operations, including authentication, order synchronization, fulfillment updates, and channel-specific processing.
+
+Operational Intelligence: Built-in filtering, validation warnings, tracking references, detailed order inspection, and spreadsheet ingestion for quickly analyzing and acting on fulfillment data.
 ---
 
 ## 🛠️ Tech Stack
